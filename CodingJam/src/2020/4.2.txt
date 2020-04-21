@@ -1,0 +1,406 @@
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Random;
+import java.util.Scanner;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+public class Solution {
+
+
+	static Solution sol = new Solution();
+	 
+	 
+	static int trace = 0;
+
+	public static void main(String[] args) {
+		Scanner scann = new Scanner(System.in);  // Create a Scanner object
+		int T = scann.nextInt();
+
+
+		for(int usease = 0; usease< T;usease++) {
+
+			int N = scann.nextInt(); //Number of activities
+			int K = scann.nextInt(); // Value to found
+			
+			Genetic gen = new Genetic(K,N);
+			LatinSquare solution = gen.getSolution();
+			//System.out.println("-------------------");
+			if(solution!=null) {
+				System.out.println(String.format("Case #%s N-%s K-%s: POSSIBLE",usease+1,N,K));
+				System.out.println(printArr(solution.getSquare()));
+			}else {
+				System.out.println(String.format("Case #%s N-%s K-%s: IMPOSSIBLE",usease+1,N,K));
+			}
+			
+		
+
+			
+
+		}
+
+
+	}
+	
+
+	static String printArr(int[][] square) {
+		StringBuilder sb = new StringBuilder();
+		for(int i = 0;i< square.length;i++) {
+			for(int j = 0;j< square.length;j++) {
+				sb.append(square[i][j]);
+				sb.append(" ");
+			}
+			sb.deleteCharAt(sb.toString().length()-1);
+			sb.append("\n");
+		}
+		sb.deleteCharAt(sb.toString().length()-1);
+
+		return sb.toString();
+	}
+
+
+
+}
+
+class LatinSquare{
+	private final  int[][] square;
+	
+	int trace=0;
+	int ecart=-1;
+
+	public LatinSquare(int[][] square) {
+		this.square = square;
+	}
+	public void evaluate(int target) {
+		for(int i =0;i<getSquare().length;i++) {
+			trace+=getSquare()[i][i];
+		}
+		this.ecart = Math.abs(trace - target);
+	}
+	public int[][] getSquare() {
+		return square;
+	}
+	
+}
+
+
+class Genetic{
+	
+	int numberOfTries = 10000;
+	Set<Integer> allNumbers =new HashSet<Integer>();
+	final int target;
+	final int maxSize;
+	final int[][] refSquare;
+	boolean continueSearch = true;
+	final double numberOfPermutation;
+	LatinSquare solution =null;
+	List<LatinSquare> solutions = new ArrayList<>();
+	
+
+	public static int generateRandomIndex(int bounder) {
+		Random rand = new Random();
+		return rand.nextInt(bounder);
+	}
+
+	public Genetic(int target,int maxSize) {
+		
+		this.target = target;
+		this.maxSize = maxSize;
+		
+		int[][] tmp = new int[this.maxSize][this.maxSize];
+		for(int i = 0;i< this.maxSize;i++) {
+			for(int j=0;j<this.maxSize;j++) {
+				tmp[i][j] =((i+j)%this.maxSize)+1;
+			}
+			
+		}
+		refSquare = tmp;
+		numberOfPermutation =  fact(this.maxSize);
+		
+		for(int i =0;i<this.maxSize;i++) {
+			allNumbers.add(i+1);
+		}
+		
+	}
+
+
+	 public static int fact (int n) {
+	        if (n==0) return(1);
+	        else return(n*fact(n-1));
+	    }
+	 
+	private void generateSolutions() {
+		double numberOfPermutation = numberOfCouple(this.maxSize);
+		for(int tryNumber = 0;tryNumber < numberOfTries;tryNumber++) {
+			
+		geneateFreshSolution(numberOfPermutation);
+		solutions.forEach(x->x.evaluate(target));
+		solutions = solutions.stream().sorted((LatinSquare lt1, LatinSquare lt2) -> Integer.compare(lt1.ecart,lt2.ecart)).collect(Collectors.toList());//Order
+		if(solutions.get(0).ecart==0) {
+			this.solution = solutions.get(0);
+			return;
+		}
+		if(solution==null) {
+			solutions = solutions.subList(0, (int) (solutions.size()/2));//Elitisme
+			for(int i = 1;i<solutions.size();i++) {
+				cross(solutions.get(i-1), solutions.get(i));
+			}
+			if(generateRandomIndex(this.maxSize) < this.maxSize /10) solutions.forEach(s -> mutate(s));
+		}
+		
+		}
+		System.err.println("Failed");
+		
+	}
+	private double numberOfCouple(int rang) {
+		if(rang==1) return 0;
+		return numberOfCouple(rang-1) + rang-1;
+	}
+
+	public void mutate(LatinSquare lt) {	
+			int index1 = generateRandomIndex(this.maxSize);
+			int index2 = generateRandomIndex(this.maxSize);
+			
+			while(index1==index2) {
+				index1 = generateRandomIndex(this.maxSize);
+				index2 = generateRandomIndex(this.maxSize);
+			}
+			
+			
+			lt = new LatinSquare(swapRow(lt.getSquare(),index1,index2));
+			lt = new LatinSquare(swapColumn(lt.getSquare(),index1,index2));
+//			lt.evaluate(target);
+			
+	}
+	
+	
+	public void cross(LatinSquare lt1,LatinSquare lt2) {
+		int index1 = generateRandomIndex(this.maxSize);
+		int index2 = generateRandomIndex(this.maxSize);
+		
+		int[] tmpRow = lt1.getSquare()[index1];
+		lt1.getSquare()[index1]=lt2.getSquare()[index2];
+		lt2.getSquare()[index2] = tmpRow;
+		
+		
+		for(int i =0;i<this.maxSize;i++) {
+			int tmp = lt2.getSquare()[i][index1];
+			lt2.getSquare()[i][index1] = lt1.getSquare()[i][index2];
+			lt1.getSquare()[i][index2] = tmp;
+		}
+		
+//		lt1.evaluate(target);
+//		lt2.evaluate(target);
+		
+
+	}
+	
+	private boolean generateRandomSquare(int[][] tmpArr,int row, int column){
+		Set<Integer> usedNumber =new HashSet<Integer>();
+		if(row>this.maxSize) {
+			return true;
+		}
+		for(int i = 0; i< row;i++) {
+			usedNumber.add(tmpArr[i][column]);
+		}
+		
+		for(int i = 0;i<column;i++) {
+			usedNumber.add(tmpArr[row][i]);
+		}
+		ArrayList<Integer> usableNumber = new ArrayList<>(allNumbers);
+		usableNumber.removeAll(usedNumber);
+		
+		if(usableNumber.isEmpty()) {
+			return false;
+		}
+		
+		Collections.shuffle(usableNumber);		
+		for(int tmp : usableNumber) {
+			
+			tmpArr[row][column]=tmp;
+			if(row==column && column==this.maxSize) {
+				return true;
+			}
+			else {
+				if((column+1)%tmpArr.length < column) {
+					row++;
+					
+				}
+				column = (column+1)%this.maxSize;
+				if(generateRandomSquare( Arrays.stream(tmpArr).map(int[]::clone).toArray(int[][]::new),row,column)){
+					break;
+				}
+			}
+			
+			
+		}
+		
+		return false;
+		
+	}
+	
+	
+	
+	public void geneateFreshSolution(double limite) {
+		
+		List<String> usedIndex = new ArrayList<>();
+		while(usedIndex.size()<limite) {
+			
+			int index1 = generateRandomIndex(this.maxSize);
+			int index2 = generateRandomIndex(this.maxSize);
+			while(index1==index2) {
+				index1 = generateRandomIndex(this.maxSize);
+				index2 = generateRandomIndex(this.maxSize);
+			}
+			
+			if(!hasIndex(index1,index2,usedIndex)) {
+				LatinSquare lt1 = new LatinSquare(swapRow(refSquare,index1,index2));
+				solutions.add(lt1);
+				
+				LatinSquare lt2 = new LatinSquare(swapColumn(refSquare,index1,index2));
+				solutions.add(lt2);
+				
+			//	int[][] newSquare = new int[this.maxSize][this.maxSize];
+				
+//				generateRandomSquare(newSquare, 0, 0);
+//				LatinSquare lt3 = new LatinSquare(newSquare);
+//				solutions.add(lt2);
+			}
+			
+			
+			}
+
+	}
+	
+	private boolean hasIndex(int index1, int index2, List<String> usedIndex) {
+		String couple ="";
+		if(index1< index2) {
+			couple = String.valueOf(index1)+String.valueOf(index2);
+		}else {
+			couple = String.valueOf(index2)+String.valueOf(index1);
+		}
+		if(usedIndex.contains(couple)) {
+			return true;
+		}
+		else {
+			usedIndex.add(couple);
+			return false;
+		}
+
+	}
+
+	private int[][] swapColumn(int[][] ref,int col1, int col2) {
+		int[][] tmp =  Arrays.stream(ref).map(int[]::clone).toArray(int[][]::new);
+		
+		for(int i =0;i<this.maxSize;i++) {
+			int tmpInt = tmp[i][col1];
+			tmp[i][col1] = tmp[i][col2];
+			tmp[i][col2] =tmpInt;
+		}
+		return tmp;
+		
+	}
+
+	private int[][] swapRow(int[][] ref,int row1, int row2) {
+		int[][] tmp =  Arrays.stream(ref).map(int[]::clone).toArray(int[][]::new);
+		for(int i =0;i<this.maxSize;i++) {
+			int tmpInt = tmp[row1][i];
+			tmp[row1][i] = tmp[row2][i];
+			tmp[row2][i] =tmpInt;
+		}
+		return tmp;
+		
+	}
+	public LatinSquare getSolution() {
+		
+		generateSolutions();
+		if(solution!=null) {
+			return solution;
+		}
+		else {
+			return null;
+		}
+		
+	}
+	
+}
+
+class Multidim 
+{
+
+    
+
+    public static boolean latinSquare(int[][] array) 
+    {
+        for (int i = 0; i<array.length ;i++) 
+        {
+            // check for duplicates in each row
+            if(duplicates(array[i]))
+            {
+                return false;
+            }
+
+            // create a column array
+            int[] column = new int[array[i].length]; 
+            for(int j = 0; j<array.length; j++)
+            {
+                column[j] = array[j][i]; // could throw an exception if the input file isn't square 3x3, 2x2, 4x4, etc
+            }
+
+            // check for duplicates in each column
+            if(duplicates(column))
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public static boolean duplicates(int[] array)
+    {
+        for (int i = 0; i<array.length; i++) 
+        {
+            for(int j = 0; j<array.length; j++)
+            {
+                if (i != j && array[i] == array[j])
+                {
+                    return true;
+                }
+            }    
+        }
+        return false;
+    }
+
+    ///PLACE YOUR METHODS HERE
+
+
+    public static void parseData(int matrix[][], Scanner in)
+    {
+        for(int r = 0; r < matrix.length; r++)
+        {
+            String splitLine[] = in.nextLine().split(" ");
+            matrix[r] = new int[splitLine.length];
+            for(int c = 0; c < matrix[r].length; c++)
+            {
+                matrix[r][c] = Integer.parseInt(splitLine[c]);
+            }
+        }
+    }
+
+    public static void printData(int matrix[][])
+    {
+        for(int r = 0; r < matrix.length; r++)
+        {
+            for(int c = 0; c < matrix[r].length; c++)
+            {
+                System.out.print(matrix[r][c] + " ");
+            }
+            System.out.println();
+        }
+    }
+}
+

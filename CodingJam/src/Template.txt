@@ -1,0 +1,35 @@
+import java.util.Scanner;
+
+public class Solution {
+
+
+	static Solution sol = new Solution();
+	 
+	 
+	public static void main(String[] args) {
+		Scanner scann = new Scanner(System.in);  // Create a Scanner object
+		int T = scann.nextInt();
+
+
+		for(int usease = 0; usease< T;usease++) {
+
+			int N = scann.nextInt(); //Number of activities
+			int K = scann.nextInt(); // Value to found
+			
+		
+				
+			System.out.println(String.format("Case #%s : POSSIBLE",usease+1));
+				
+
+
+		}
+
+
+	}
+	
+
+
+
+
+
+}

@@ -1,0 +1,134 @@
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Scanner;
+import java.util.stream.Collectors;
+
+public class Solution {
+ 
+	 
+	public static void main(String[] args) {
+		Scanner scann = new Scanner(System.in);  // Create a Scanner object
+		
+		
+		int T = scann.nextInt();
+
+
+		for(int usease = 0; usease< T;usease++) {
+
+			int R = scann.nextInt(); //Number of column
+			int C = scann.nextInt(); //Number of row
+			Cell firstCell = null;
+			List<Cell> cells = new ArrayList<>();
+		    for(int i = 1;i<=R;i++){
+		      for(int j=1;j<=C;j++) {
+		    	  cells.add(new Cell(i, j));
+		      }   
+		    }
+		
+		    Collections.shuffle(cells);
+		
+		    for(Cell c : cells) {
+		    	
+		    	if(c.findNextCell(cells)) {
+		    		firstCell = c;
+		    		break;
+		    	}
+		    }
+		    
+			if(firstCell!=null) {
+				System.out.println(String.format("Case #%s: POSSIBLE",usease+1));
+				System.out.println(firstCell.printCells().trim());
+			}
+			else {
+				System.out.println(String.format("Case #%s: IMPOSSIBLE",usease+1));
+			}
+			
+				
+
+
+		}
+
+
+	}
+	
+	
+
+}
+
+
+class Cell{
+    private final int row;
+    private final int column;
+    private boolean used = false;
+    private Cell nextCell;
+    
+    public Cell(int r, int c){
+        this.row = r;
+        this.column = c;
+ 
+    }
+    
+    public boolean checkNextCell(Cell c) {
+    if(c.getRow() == this.getRow() ||
+    		c.getColumn()==this.getColumn()||
+    		c.getRow()+c.getColumn() == this.getRow() + this.getColumn() ||
+    		c.getRow()-c.getColumn() == this.getRow() - this.getColumn()) {
+    	return false;
+    }
+    	return true;
+    	
+    }
+
+	public boolean isUsed() {
+		return used;
+	}
+	
+	public void setUsed(boolean used) {
+		this.used = used;
+	}
+
+	public int getColumn() {
+		return column;
+	}
+
+	public int getRow() {
+		return row;
+	}
+
+	public Cell getNextCell() {
+		return nextCell;
+	}
+
+	public void setNextCell(Cell nextCell) {
+		this.nextCell = nextCell;
+	}
+    
+    
+    public boolean findNextCell(List<Cell> cells) {
+    	
+    	List<Cell> remainingCells = cells.stream().filter(c->!c.isUsed()).filter(c->c!=this).collect(Collectors.toList());
+    	if(remainingCells.isEmpty()) return true;
+    	for(Cell cell : remainingCells.stream().filter(c->this.checkNextCell(c)).collect(Collectors.toList())) {
+    		System.err.println("This : " + this.getRow() + " "+this.getColumn());
+    		System.err.println("Cell : " + cell.getRow() + " "+cell.getColumn());
+    		this.used = true;
+    		if(cell.findNextCell(cells)) {
+    			this.setNextCell(cell);
+    			return true;
+    		}
+    	}
+    	this.used = false;
+		return false;
+    	
+    }
+    
+    public String printCells() {
+    	StringBuilder sb = new StringBuilder();
+    	sb.append(this.row).append(" ").append(this.column).append("\n");
+    	if(nextCell!=null) {
+    		sb.append(nextCell.printCells());
+    	}
+    	return sb.toString();
+    }
+}

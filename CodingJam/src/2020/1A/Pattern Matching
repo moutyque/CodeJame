@@ -1,0 +1,153 @@
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Scanner;
+import java.util.stream.Collectors;
+
+public class Solution {
+
+	public static void main(String[] args) {
+
+
+		Scanner scanner = new Scanner( System.in );
+
+		int T= scanner.nextInt();
+
+
+		for(int useCase = 0;useCase < T;useCase++) {
+			System.out.println(String.format("Case #%s: %s", useCase+1,solve(scanner)));
+
+
+		}
+
+	}
+
+	private static String solve(Scanner scanner) {
+
+		int N= scanner.nextInt();
+
+		List<String> pattern = new ArrayList<>();
+
+
+		for(int i = 0; i< N;i++) {
+			pattern.add(scanner.next().trim());
+		}
+
+		pattern = pattern.stream().distinct().collect(Collectors.toList());
+		String prefix = pattern.stream().filter(x->!x.startsWith("*")).collect(Collectors.toList()).isEmpty() ? "*" :  getPrefix(pattern, "");
+		String suffix = pattern.stream().filter(x->!x.endsWith("*")).collect(Collectors.toList()).isEmpty() ? "*" :  getSuffix(pattern, "");
+
+		List<String> full = pattern.stream().filter(x-> x.endsWith("*")).filter(x->x.startsWith("*")).collect(Collectors.toList());
+		
+		if(suffix.isEmpty() 
+				|| prefix.isEmpty() 
+				) {
+				return "*";
+		}
+
+		suffix = suffix.replaceAll("\\*", "");
+		prefix = prefix.replaceAll("\\*", "");
+		
+		StringBuilder sb = new StringBuilder();
+		sb.append(prefix);
+		for(String str: pattern) {
+			sb.append(formatPattern(prefix, suffix, str));
+		}
+		sb.append(suffix);
+
+
+
+		return sb.toString();
+
+	}
+
+
+	private static String formatPattern(String prefix, String suffix, String str) {
+		
+		if(str.startsWith("*")) {
+			while(str.charAt(0)=='*') {
+				str = str.replaceFirst("\\*", "");
+			}
+		}
+		else if(str.contains("*")){
+			str = str.substring(str.indexOf("*")+1,str.length());
+		}
+		
+		if(str.endsWith("*")) {
+			while(str.charAt(str.length()-1)=='*') {
+				str = removeSuffix(str,"*");
+			}
+		}else if(str.contains("*")){
+			str = str.substring(0,str.lastIndexOf("*"));
+		}
+	
+		
+		return str.replaceAll("\\*", "A");
+
+	}
+	public static String removeSuffix(final String s, final String suffix)
+    {
+        if (s != null && suffix != null && s.endsWith(suffix)){
+            return s.substring(0, s.length() - suffix.length());
+        }
+        return s;
+    }
+
+	private static String getSuffix(final List<String> pattern,String suffix) {
+		String s = "*"+suffix;
+		
+		List<String> filterePattern = pattern.stream().filter(x ->!x.endsWith(s)).collect(Collectors.toList());		
+		
+		if(filterePattern.isEmpty()) return suffix;
+		String tmp = filterePattern.get(0);
+		int lastIndex = tmp.length();
+		if(suffix.isEmpty()) {
+			suffix = tmp.substring(lastIndex-1, lastIndex);
+		}
+		else {
+			suffix = tmp.substring(lastIndex -1 - suffix.length() , lastIndex);
+		}
+		String finalSuffix = suffix;
+		
+		List<String> endList =filterePattern.stream().filter(x->x.endsWith(finalSuffix)).collect(Collectors.toList());
+		
+		
+		while(!filterePattern.isEmpty() &&
+				(endList.size() 
+				== filterePattern.size())) {
+				return getSuffix(filterePattern, finalSuffix);
+		}
+		
+//		if(!filterePattern.isEmpty()) return suffix;
+		return "";
+	}
+
+	private static String getPrefix(final List<String> pattern,String prefix) {
+
+		String s = prefix+"*";
+		List<String> filterePattern = pattern.stream().filter(x ->!x.startsWith(s)).collect(Collectors.toList());		
+		
+		//If not the first loop and the one of the pattern has a * we can use the current prefix as prefix
+		if(filterePattern.isEmpty()) return prefix;
+		String tmp = filterePattern.get(0);
+		if(prefix.isEmpty()) {
+			prefix = tmp.substring(0, 1);
+		}
+		else {
+			prefix = tmp.substring(0 , prefix.length()+1);
+		}
+		String finalPrefix = prefix;
+		
+		List<String> endList =filterePattern.stream().filter(x->x.startsWith(finalPrefix)).collect(Collectors.toList());
+		
+		
+		while(!filterePattern.isEmpty() &&
+				(endList.size() 
+				== filterePattern.size())) {
+				return getPrefix(filterePattern, finalPrefix);
+		}
+		
+//		if(!filterePattern.isEmpty()) return suffix;
+		return "";
+	}
+
+}

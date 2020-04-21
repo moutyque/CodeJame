@@ -1,0 +1,135 @@
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Scanner;
+import java.util.Set;
+import java.util.stream.Collectors;
+//TO SLOW, use PGCD
+public class Solution {
+	static Set<BigInteger> primes = new HashSet<>();
+	static List<BigInteger> result =  new ArrayList<>();
+	static List<String> alphabetic = Arrays.asList("A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z");
+	
+	
+	
+	public static void main(String[] args) {
+		Scanner scann = new Scanner(System.in);  // Create a Scanner object
+		int T = scann.nextInt();
+		
+		for(int i = 0; i< T;i++) {
+			
+			long startTime = System.nanoTime();
+
+			List<BigInteger> entries = new ArrayList<>();
+			primes = new HashSet<>();
+			result =  new ArrayList<>();
+			int N = scann.nextInt();//MAX PRIME
+			int L =scann.nextInt();//Number of prime product
+			BigInteger minEntry = BigInteger.valueOf(0);
+			for(int j = 0;j<L;j++) {
+				BigInteger entry = new BigInteger(String.valueOf(scann.nextInt()));
+				if(minEntry.intValue()==0 ||   entry.intValue() < minEntry.intValue()) minEntry = entry;
+				entries.add(entry);
+			}
+			
+			long intermediateTime = printTime("Add entries : ",startTime);
+			
+			
+			setFirstPrimes(entries.get(0));
+			List<BigInteger> firstPrimes = getFirstNumbers(entries.get(0));//TODO : change the method to manage the smallest prime
+
+			
+			intermediateTime = printTime("Add getFirstNumbers : ",intermediateTime);
+			
+			BigInteger secondProduct = entries.get(1);
+			BigInteger option1 = firstPrimes.get(0);
+			BigInteger option2 = firstPrimes.get(1);
+			
+			if(secondProduct.divideAndRemainder(option1)[1].intValueExact()==0) {
+				result.add(option2);
+				result.add(option1);
+				result.add(secondProduct.divideAndRemainder(option1)[0]);
+			}
+			else if(secondProduct.divideAndRemainder(option2)[1].intValueExact()==0){
+				result.add(option1);
+				result.add(option2);
+				result.add(secondProduct.divideAndRemainder(option2)[0]);
+			}
+			
+	
+			intermediateTime = printTime("calculate option : ",intermediateTime);
+
+			for(int j = 2;j<entries.size();j++) {
+				result.add(entries.get(j).divide(result.get(result.size()-1)));
+			}
+			
+			intermediateTime = printTime("divid all prime : ",intermediateTime);
+
+			List<BigInteger> orederedResult = result.stream().distinct().sorted().collect(Collectors.toList());
+			
+			intermediateTime = printTime("Order primes : ",intermediateTime);
+
+			StringBuilder decoded = new StringBuilder();
+			result.stream().forEach(x->decoded.append(alphabetic.get(orederedResult.indexOf(x))));
+			
+			intermediateTime = printTime("Find letters : ",intermediateTime);
+
+			System.out.println(String.format("Case #%s: %s",i+1,decoded.toString()));			
+			
+		}
+	}
+
+	public static long printTime(String message,long startTime) {
+		long intermediateTime   = System.nanoTime();
+		long totalTime = intermediateTime - startTime;
+		
+		System.out.println(message + totalTime/1000);
+		return intermediateTime;
+	}
+	
+	private static void setFirstPrimes(BigInteger firstProduct) {
+		
+		for(double i = 0; i< firstProduct.intValueExact();i++) {
+			if(isPrime(i)) {
+				primes.add(BigDecimal.valueOf(i).toBigInteger());
+			}
+		}
+		
+		
+		
+	}
+	
+	private static boolean isPrime(double n) {  
+	       if (n <= 1) {  
+	           return false;  
+	       }  
+	       for (double i = 2; i < Math.sqrt(n); i++) {  
+	           if (n % i == 0) {  
+	               return false;  
+	           }  
+	       }  
+	       return true;  
+	   }  
+
+	private static List<BigInteger> getFirstNumbers(BigInteger firstProduct) {
+		
+		for(BigInteger prime : primes) {
+			BigInteger[] result = firstProduct.divideAndRemainder(prime);
+			if(result[1].intValue()==0) {
+				List<BigInteger> list = new ArrayList<>();
+				list.add(prime);
+				list.add(result[0]);
+				return list;
+			}
+		}
+		
+		
+		return new ArrayList<BigInteger>();
+		
+	}
+	
+}
