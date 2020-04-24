@@ -1,10 +1,9 @@
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
-import java.util.stream.Collectors;
 
 public class Solution {
-
+private static final char WILDCARE = '*';
 	public static void main(String[] args) {
 
 
@@ -25,129 +24,132 @@ public class Solution {
 
 		int N= scanner.nextInt();
 
-		List<String> pattern = new ArrayList<>();
+		List<String> patterns = new ArrayList<>();
 
+		String prefix ="";
+		String suffix ="";
+		boolean foundPref = true;
+		boolean foundSuff = true;
 
 		for(int i = 0; i< N;i++) {
-			pattern.add(scanner.next().trim());
+			String pattern = scanner.next().trim();
+			patterns.add(pattern);
+			
+			if(foundPref && pattern.indexOf(WILDCARE)!=0) {
+				prefix = determinePrefix(prefix,pattern.substring(0, pattern.indexOf(WILDCARE)));
+				if(prefix.isEmpty()) foundPref=false; 
+			}
+			if(foundSuff && pattern.lastIndexOf(WILDCARE)!=pattern.length()-1) {
+				suffix = determineSuffix(suffix,pattern.substring(pattern.lastIndexOf(WILDCARE)+1, pattern.length()));
+				if(suffix.isEmpty()) foundSuff=false; 
+			}
 		}
-
-		pattern = pattern.stream().distinct().collect(Collectors.toList());
-		String prefix = pattern.stream().filter(x->!x.startsWith("*")).collect(Collectors.toList()).isEmpty() ? "*" :  getPrefix(pattern, "");
-		String suffix = pattern.stream().filter(x->!x.endsWith("*")).collect(Collectors.toList()).isEmpty() ? "*" :  getSuffix(pattern, "");
-
-		List<String> full = pattern.stream().filter(x-> x.endsWith("*")).filter(x->x.startsWith("*")).collect(Collectors.toList());
 		
-		if(suffix.isEmpty() 
-				|| prefix.isEmpty() 
-				) {
-				return "*";
-		}
-
-		suffix = suffix.replaceAll("\\*", "");
-		prefix = prefix.replaceAll("\\*", "");
+		if(!foundSuff || !foundPref) return "*";
 		
-		StringBuilder sb = new StringBuilder();
-		sb.append(prefix);
-		for(String str: pattern) {
-			sb.append(formatPattern(prefix, suffix, str));
-		}
-		sb.append(suffix);
+		return generateOutput(patterns, prefix, suffix);
 
-
-
-		return sb.toString();
 
 	}
 
+	private static String generateOutput(List<String> patterns, String prefix, String suffix) {
+		StringBuilder sb = new StringBuilder();
+		sb.append(prefix);
+		for(String str: patterns) {
+			sb.append(formatPattern(str));
+		}
+		if(!sb.toString().endsWith(suffix)) sb.append(suffix);
+		return sb.toString();
+	}
+	
+	private static String determinePrefix(String prefix, String substring) {
+		String max ="";
+		String min ="";
+		if(prefix.isEmpty()) return substring;
+		if(substring.isEmpty()) return prefix;
+		
+		if(prefix.length() > substring.length()) {
+			max = prefix;
+			min = substring;
+		}
+		else {
+			max = substring;
+			min = prefix;
+		}
 
-	private static String formatPattern(String prefix, String suffix, String str) {
+		
+		if(max.startsWith(min)) {
+			return max;
+		}
+		else {
+			return "";
+		}
+		
+		
+		
+	}
+	
+	private static String determineSuffix(String prefix, String substring) {
+		String max ="";
+		String min ="";
+		if(prefix.isEmpty()) return substring;
+		if(substring.isEmpty()) return prefix;
+		
+		if(prefix.length() > substring.length()) {
+			max = prefix;
+			min = substring;
+		}
+		else {
+			max = substring;
+			min = prefix;
+		}
+
+		
+		if(max.endsWith(min)) {
+			return max;
+		}
+		else {
+			return "";
+		}
+		
+		
+		
+	}
+	
+	private static String formatPattern(String str) {
+
+		if(str.indexOf(WILDCARE) == str.lastIndexOf(WILDCARE)) {//Only one * so should be contained in prefix suffix
+			return "";
+		}
 		
 		if(str.startsWith("*")) {
-			while(str.charAt(0)=='*') {
+			while(!str.isEmpty() && str.charAt(0)==WILDCARE) {
 				str = str.replaceFirst("\\*", "");
 			}
 		}
 		else if(str.contains("*")){
-			str = str.substring(str.indexOf("*")+1,str.length());
+			str = str.substring(str.indexOf(WILDCARE)+1,str.length());
 		}
-		
+
 		if(str.endsWith("*")) {
-			while(str.charAt(str.length()-1)=='*') {
+			while(str.charAt(str.length()-1)==WILDCARE) {
 				str = removeSuffix(str,"*");
 			}
 		}else if(str.contains("*")){
-			str = str.substring(0,str.lastIndexOf("*"));
+			str = str.substring(0,str.lastIndexOf(WILDCARE));
 		}
-	
-		
+
+
 		return str.replaceAll("\\*", "A");
 
 	}
+	
 	public static String removeSuffix(final String s, final String suffix)
-    {
-        if (s != null && suffix != null && s.endsWith(suffix)){
-            return s.substring(0, s.length() - suffix.length());
-        }
-        return s;
-    }
-
-	private static String getSuffix(final List<String> pattern,String suffix) {
-		String s = "*"+suffix;
-		
-		List<String> filterePattern = pattern.stream().filter(x ->!x.endsWith(s)).collect(Collectors.toList());		
-		
-		if(filterePattern.isEmpty()) return suffix;
-		String tmp = filterePattern.get(0);
-		int lastIndex = tmp.length();
-		if(suffix.isEmpty()) {
-			suffix = tmp.substring(lastIndex-1, lastIndex);
+	{
+		if (s != null && suffix != null && s.endsWith(suffix)){
+			return s.substring(0, s.length() - suffix.length());
 		}
-		else {
-			suffix = tmp.substring(lastIndex -1 - suffix.length() , lastIndex);
-		}
-		String finalSuffix = suffix;
-		
-		List<String> endList =filterePattern.stream().filter(x->x.endsWith(finalSuffix)).collect(Collectors.toList());
-		
-		
-		while(!filterePattern.isEmpty() &&
-				(endList.size() 
-				== filterePattern.size())) {
-				return getSuffix(filterePattern, finalSuffix);
-		}
-		
-//		if(!filterePattern.isEmpty()) return suffix;
-		return "";
-	}
-
-	private static String getPrefix(final List<String> pattern,String prefix) {
-
-		String s = prefix+"*";
-		List<String> filterePattern = pattern.stream().filter(x ->!x.startsWith(s)).collect(Collectors.toList());		
-		
-		//If not the first loop and the one of the pattern has a * we can use the current prefix as prefix
-		if(filterePattern.isEmpty()) return prefix;
-		String tmp = filterePattern.get(0);
-		if(prefix.isEmpty()) {
-			prefix = tmp.substring(0, 1);
-		}
-		else {
-			prefix = tmp.substring(0 , prefix.length()+1);
-		}
-		String finalPrefix = prefix;
-		
-		List<String> endList =filterePattern.stream().filter(x->x.startsWith(finalPrefix)).collect(Collectors.toList());
-		
-		
-		while(!filterePattern.isEmpty() &&
-				(endList.size() 
-				== filterePattern.size())) {
-				return getPrefix(filterePattern, finalPrefix);
-		}
-		
-//		if(!filterePattern.isEmpty()) return suffix;
-		return "";
+		return s;
 	}
 
 }
